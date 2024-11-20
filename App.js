@@ -1,6 +1,7 @@
 import * as React from 'react';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
-import { createDrawerNavigator } from '@react-navigation/drawer';
+import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
 import GraphScreen from './views/GraphScreen';  
 import TradeScreen from './views/TradeScreen';
 import MarketScreen from './views/MarketScreen';
@@ -24,15 +25,34 @@ import Helpchatscreen from './views/Helpchatscreen';
 const Drawer = createDrawerNavigator();
 
 export default function App() {
+  function CustomDrawerContent(props) {
+    return (
+      <DrawerContentScrollView {...props}>
+        <View style={styles.headerContainer}>
+          {/* Logo */}
+          <Image 
+            source={require('./assets/icon.png')} // Replace with your logo path
+            style={styles.logo}
+          />
+          {/* App Name */}
+          <Text style={styles.appName}>Your App Name</Text>
+        </View>
+        <DrawerItemList {...props} />
+      </DrawerContentScrollView>
+    );
+  }
   return (
     <NavigationContainer>
       <Drawer.Navigator 
         initialRouteName="SignupScreen" 
+        drawerContent={(props) => <CustomDrawerContent {...props} />}
+
         screenOptions={{
           // headerShown: false,¯
           drawerStyle: {
             backgroundColor: 'black', // Background color of the drawer
           },
+          
           header: () => <CustomHeader />,
           drawerActiveTintColor: 'white', // Color for the active item
           drawerInactiveTintColor: 'gray', // Color for inactive items
@@ -89,3 +109,27 @@ export default function App() {
     </NavigationContainer>
   );
 }
+const styles = StyleSheet.create({
+  headerContainer: {
+    alignItems: 'center',
+    padding: 30,
+    borderBottomWidth: 1,
+    borderBottomColor: 'gray',
+    marginBottom: 10,
+
+    display:"flex",
+    flexDirection:"row",
+    gap:20
+  },
+  logo: {
+    width: 40,
+    height: 40,
+    borderRadius: 40,
+   
+  },
+  appName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+});

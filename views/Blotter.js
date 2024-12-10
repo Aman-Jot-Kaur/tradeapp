@@ -32,7 +32,7 @@ const Blotter = () => {
   if (loading) {
     return (
       <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#ffffff" />
+        {/* <ActivityIndicator size="large" color="#ffffff" /> */}
       </View>
     );
   }

@@ -1,207 +1,98 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Dimensions,
-  Button,
-  ActivityIndicator,
-  TouchableOpacity,
-} from 'react-native';
-import { LineChart, BarChart } from 'react-native-chart-kit';
-import Autocomplete from 'react-native-autocomplete-input';
+import React from 'react';
+import { View, StyleSheet, Dimensions } from 'react-native';
+import { WebView } from 'react-native-webview';
 
-const screenWidth = Dimensions.get('window').width;
-const graphWidth = screenWidth * 0.9;
+// Get screen dimensions
+const { width, height } = Dimensions.get('window');
 
-const Graph = () => {
-  const [liveData, setLiveData] = useState([]);
-  const [labels, setLabels] = useState([]);
-  const [assets, setAssets] = useState([]);
-  const [query, setQuery] = useState('');
-  const [selectedAsset, setSelectedAsset] = useState('EUR/USD');
-  const [chartType, setChartType] = useState('line');
-  const [loading, setLoading] = useState(true);
+const TradingViewSymbolSearch = () => {
+  const widgetHTML = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+        <style>
+          html, body, #tradingview_widget {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000; /* Dark theme */
+            overflow: hidden; /* Prevent scrollbars */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            
 
-  useEffect(() => {
-    const fetchAssets = async () => {
-      try {
-        const response = await fetch('https://api.grandprimeforex.com:3001/fetch-data');
-        const result = await response.json();
-        const assetOptions = result.data.map((item) => ({
-          label: item.asset,
-          value: item.asset,
-        }));
-        setAssets(assetOptions);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching assets:', error);
-        setLoading(false);
-      }
-    };
-    fetchAssets();
-  }, []);
-
-  useEffect(() => {
-    const fetchLiveData = async () => {
-      try {
-        const response = await fetch('https://api.grandprimeforex.com:3001/fetch-data');
-        const result = await response.json();
-        const data = result.data;
-        const selectedAssetData = data.find((item) => item.asset === selectedAsset);
-
-        if (selectedAssetData) {
-          const bid = parseFloat(selectedAssetData.bid);
-          const timestamp = new Date().toLocaleTimeString();
-
-          setLiveData((prevData) => [...prevData.slice(-4), bid]);
-          setLabels((prevLabels) => [...prevLabels.slice(-4), timestamp]);
-        }
-      } catch (error) {
-        console.error('Error fetching live data:', error);
-      }
-    };
-
-    fetchLiveData();
-    const interval = setInterval(fetchLiveData, 2000);
-
-    return () => clearInterval(interval);
-  }, [selectedAsset]);
-
-  const filteredAssets = query
-    ? assets.filter((item) =>
-        item.label.toLowerCase().includes(query.toLowerCase())
-      )
-    : [];
-
-  const toggleChartType = () => {
-    setChartType((prevType) => (prevType === 'line' ? 'bar' : 'line'));
-  };
-
-  const handleSelectItem = (item) => {
-    setSelectedAsset(item.value);
-    setQuery(item.label);
-    // Hide the list after selection
-    setTimeout(() => {
-      setQuery(''); // Clear the input field
-    }, 200);
-  };
+          }
+            #tradingview_widget {
+            transform:scale(1.3)
+            }
+            
+        </style>
+      </head>
+      <body>
+        <div id="tradingview_widget"></div>
+        <script type="text/javascript">
+          new TradingView.widget({
+            container_id: "tradingview_widget",
+            width: "60%",
+            height: "70%",
+            symbol: "EURUSD",
+            interval: "D",
+            timezone: "Etc/UTC",
+            theme: "dark",
+            style: "1",
+            locale: "en",
+            toolbar_bg: "#000",
+            enable_publishing: false,
+            allow_symbol_change: true,
+            save_image: false,
+            studies: ["RSI@tv-basicstudies"],
+            overrides: {
+              // Adjusting axis label size and other important text
+              "scalesProperties.textSize": 8, // Increase the axis label size
+              "scalesProperties.fontSize": 18, // Increase font size for axis numbers
+              "symbolWatermarkProperties.fontSize": 20, // Increase the symbol watermark size
+              "symbolWatermarkProperties.transparency": 90, // Less transparency for symbol watermark
+              "mainSeriesProperties.candleStyle.upColor": "#26A69A", // Green color for up candles
+              "mainSeriesProperties.candleStyle.downColor": "#EF5350", // Red color for down candles
+              "paneProperties.legendProperties.showLegend": true, // Ensure legend shows
+              "paneProperties.topMargin": 25, // Adjust top margin to prevent clipping
+              "mainSeriesProperties.candleStyle.borderColor": "#FF0000", // Border color for candles
+              "mainSeriesProperties.candleStyle.borderUpColor": "#66BB6A", // Up border color
+              "mainSeriesProperties.candleStyle.borderDownColor": "#EF5350", // Down border color
+            },
+          });
+        </script>
+      </body>
+    </html>
+  `;
 
   return (
     <View style={styles.container}>
-      <View style={styles.topBar}>
-        <Autocomplete
-          data={filteredAssets}
-          defaultValue={query}
-          onChangeText={(text) => setQuery(text)}
-          onSelectItem={(item) => handleSelectItem(item)}
-          flatListProps={{
-            keyExtractor: (item) => item.value,
-            renderItem: ({ item }) => (
-              <TouchableOpacity
-                style={styles.suggestionItem}
-                onPress={() => handleSelectItem(item)}
-              >
-                <Text style={styles.suggestionText}>{item.label}</Text>
-              </TouchableOpacity>
-            ),
-          }}
-          placeholder="Type to search..."
-          
-          inputContainerStyle={styles.autocompleteContainer}
-          listContainerStyle={styles.listContainer}
-          listStyle={styles.list}
-        />
-      </View>
-
-      <View style={styles.content}>
-        <Text style={styles.selectedAssetText}>
-          Selected Asset: {selectedAsset}
-        </Text>
-
-        <View style={styles.chartContainer}>
-          {loading ? (
-            <ActivityIndicator size="large" color="#00ff00" />
-          ) : (
-            labels.length > 0 && (
-              chartType === 'line' ? (
-                <LineChart
-                  data={{
-                    labels: labels,
-                    datasets: [{ data: liveData }],
-                  }}
-                  width={graphWidth}
-                  height={250}
-                  yAxisLabel={'$'}
-                  chartConfig={chartConfig}
-                  bezier
-                  style={styles.chartStyle}
-                />
-              ) : (
-                <BarChart
-                  data={{
-                    labels: labels,
-                    datasets: [{ data: liveData }],
-                  }}
-                  width={graphWidth}
-                  height={250}
-                  yAxisLabel={'$'}
-                  chartConfig={chartConfig}
-                  style={styles.chartStyle}
-                />
-              )
-            )
-          )}
-        </View>
-        <Button
-          title={`Switch to ${chartType === 'line' ? 'Bar' : 'Line'} Chart`}
-          onPress={toggleChartType}
-          color="#007bff"
-        />
-      </View>
+      <WebView
+        originWhitelist={['*']}
+        source={{ html: widgetHTML }}
+        style={styles.webview}
+        javaScriptEnabled
+        domStorageEnabled
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000', padding: 10 },
-  topBar: { marginBottom: 10 },
-  autocompleteContainer: {
-    backgroundColor: 'black',
-    padding: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#ddd',
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center', // Center the WebView horizontally and vertically
+    backgroundColor: '#000',
   },
-  listContainer: {
-    backgroundColor: 'black',
-    borderRadius: 8,
-    zIndex: 10,  // Ensure list is above the graph
+  webview: {
+    width: width , // Adjust to 90% of screen width
+    height: height , // Adjust to 70% of screen height
   },
-  list: { maxHeight: 150 },
-  suggestionItem: {
-    padding: 10,
-    borderBottomWidth: 1,
-    backgroundColor: 'black',
-    borderBottomColor: '#333',
-  },
-  suggestionText: { color: 'white', fontSize: 16 },
-  selectedAssetText: {
-    color: 'white',
-    fontSize: 18,
-    marginBottom: 10,
-  },
-  chartContainer: { marginTop: 20, alignItems: 'center' },
-  chartStyle: { marginVertical: 8, borderRadius: 16 },
 });
 
-const chartConfig = {
-  decimalPlaces: 2,
-  backgroundColor: '#000',
-  backgroundGradientFrom: '#1E2923',
-  backgroundGradientTo: '#08130D',
-  color: (opacity = 1) => `rgba(26, 255, 146, ${opacity})`,
-  labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-};
-
-export default Graph;
+export default TradingViewSymbolSearch;

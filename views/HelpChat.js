@@ -18,7 +18,7 @@ const HelpChat = () => {
 
   const fetchData = async () => {
     try {
-      const storedUserId = await AsyncStorage.getItem('userIdSA');
+      const storedUserId = await AsyncStorage.getItem('userEmailSA');
       setId(storedUserId);
 
       onValue(messageRef, (snapshot) => {

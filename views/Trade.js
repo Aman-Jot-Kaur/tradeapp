@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { collection, query, where, getDocs } from 'firebase/firestore'; // Updated Firestore imports
 import { db } from '../firebaseCon'; // Firebase config
@@ -11,14 +11,12 @@ const Trade = () => {
   const [loading, setLoading] = useState(false);
   const [trades, setTrades] = useState([]);
 
-  // Fetch trades from Firestore whenever the active tab changes
   useFocusEffect(
     React.useCallback(() => {
       const fetchTrades = async () => {
-        setLoading(true); // Show loader
+        setLoading(true);
 
         try {
-          // Get stored user ID from AsyncStorage
           const storedUserId = await AsyncStorage.getItem('userEmailSA');
           if (!storedUserId) {
             Toast.show({ type: 'error', text1: 'User ID not found' });
@@ -26,7 +24,6 @@ const Trade = () => {
             return;
           }
 
-          // Query to fetch trades for the specific user
           const tradesQuery = query(
             collection(db, 'trades'),
             where('email', '==', storedUserId)
@@ -34,22 +31,20 @@ const Trade = () => {
 
           const querySnapshot = await getDocs(tradesQuery);
           const fetchedTrades = querySnapshot.docs.map(doc => doc.data());
-          // Filter trades based on the active tab (Open or Closed)
           const filteredTrades = fetchedTrades.filter(trade =>
             activeTab === 'Open' ? trade.status === 'Open' : trade.status === 'Close'
           );
 
-          setTrades(filteredTrades); // Store filtered trades in state
-
+          setTrades(filteredTrades);
         } catch (error) {
           console.error('Error fetching trades:', error);
           Toast.show({ type: 'error', text1: 'Error loading trades' });
         } finally {
-          setLoading(false); // Stop loader
+          setLoading(false);
         }
       };
 
-      fetchTrades(); // Trigger fetch on focus or tab change
+      fetchTrades();
     }, [activeTab])
   );
 
@@ -63,7 +58,6 @@ const Trade = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header with Open and Closed tabs */}
       <View style={styles.header}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'Open' && styles.activeTab]}
@@ -75,75 +69,63 @@ const Trade = () => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'Closed' && styles.activeTab]}
+          style={[styles.tab, activeTab === 'Close' && styles.activeTab]}
           onPress={() => setActiveTab('Closed')}
         >
-          <Text style={[styles.tabText, activeTab === 'Closed' && styles.activeTabText]}>
+          <Text style={[styles.tabText, activeTab === 'Close' && styles.activeTabText]}>
             Closed
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Conditionally Render Open or Closed Section */}
-     
+      {/* Add ScrollView for scrolling */}
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <View style={styles.content}>
-          {trades.length==0 &&                     <Text style={styles.sellButtonText}>No trades here</Text>
-        }
-          {trades.length > 0 ? (
-            trades.map((trade, index) => (
-              <View key={index} style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.stockSymbol}>{trade.currency}</Text>
-                  <View style={styles.stockPairContainer}>
-                    <Text style={styles.stockPair}>{trade.currencyPair}</Text>
-                    <View style={styles.flagContainer}>
+          {trades.length === 0 && (
+            <Text style={styles.noTradesText}>No trades here</Text>
+          )}
+          {trades.map((trade, index) => (
+            <View key={index} style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.stockSymbol}>{trade.currency}</Text>
+                <View style={styles.stockPairContainer}>
+                  <Text style={styles.stockPair}>{trade.currencyPair}</Text>
+                  <View style={styles.flagContainer}>
                     <Text style={styles.buyButtonText}>{trade.type}</Text>
-
-                    </View>
                   </View>
-                  <View style={styles.header}>
-                <TouchableOpacity style={styles.buyButton}>
+                </View>
+                <View style={styles.header}>
+                  <TouchableOpacity style={styles.buyButton}>
                     <Text style={styles.buyButtonText}>BUY {trade.buy} Rs</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.sellButton}>
                     <Text style={styles.sellButtonText}>SELL {trade.sell} Rs</Text>
                   </TouchableOpacity>
-                  </View>
-                </View>
-                <View style={styles.transactionDetails}>
-                <Text style={styles.transactionRow}>Quantity: {trade.quantity}</Text>
-
-                  <Text style={styles.transactionRow}>Date: {trade.date}</Text>
                 </View>
               </View>
-            ))
-          ) : (
-            <View>
-              <Text >No trades available</Text>
+              <View style={styles.transactionDetails}>
+                <Text style={styles.transactionRow}>Quantity: {trade.quantity}</Text>
+                <Text style={styles.transactionRow}>Date: {trade.date}</Text>
+              </View>
             </View>
-            
-          )}
+          ))}
         </View>
-      
+      </ScrollView>
     </View>
   );
-
-
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000', // Dark background
+    backgroundColor: '#000',
     padding: 20,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 20,
-    borderBottomWidth: 1,
     borderBottomColor: '#444',
-    gap:30
   },
   tab: {
     flex: 1,
@@ -155,18 +137,24 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   activeTab: {
-    borderBottomWidth: 4, // Bold underline for active tab
-    borderBottomColor: 'white', // White underline
+    borderBottomWidth: 4,
+    borderBottomColor: 'white',
   },
   activeTabText: {
-    fontWeight: 'bold', // Bold text for active tab
+    fontWeight: 'bold',
   },
   content: {
-    flex: 1,
+    paddingBottom: 20, // Add padding to avoid cutting off content
+  },
+  noTradesText: {
+    color: 'white',
+    textAlign: 'center',
+    fontSize: 18,
+    marginTop: 20,
   },
   card: {
     marginTop: 20,
-    backgroundColor: 'rgba(0, 50, 80, 0.5)', // Updated to blue shade
+    backgroundColor: 'rgba(0, 50, 80, 0.5)',
     borderRadius: 10,
     padding: 15,
   },
@@ -174,8 +162,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
-    gap:20,
     flexWrap: 'wrap',
   },
   stockSymbol: {
@@ -183,77 +169,38 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
   },
-  stockPairContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  stockPair: {
-    color: 'white',
-    fontSize: 20,
-  },
-  flagContainer: {
-    flexDirection: 'row',
-    marginLeft: 0,
-  },
-  flag: {
-    fontSize: 20,
-    marginHorizontal: 2,
-  },
   buyButton: {
-    borderColor: '#1cb85c', // Green border color
-    borderWidth: 2, // Add a border
+    borderColor: '#1cb85c',
+    borderWidth: 2,
     borderRadius: 5,
     paddingHorizontal: 15,
     paddingVertical: 10,
-    alignItems: 'center', // Center text
-    marginRight: -5
   },
   buyButtonText: {
-    color: '#1cb85c', // Green text color
+    color: '#1cb85c',
     fontSize: 18,
     fontWeight: 'bold',
-
   },
   sellButton: {
-    borderColor: 'red', // Green border color
-    borderWidth: 2, // Add a border
+    borderColor: 'red',
+    borderWidth: 2,
     borderRadius: 5,
     paddingHorizontal: 15,
     paddingVertical: 10,
-    alignItems: 'center', // Center text
-    marginRight: -5
+    marginLeft: 30,
   },
   sellButtonText: {
-    color: 'red', // Green text color
+    color: 'red',
     fontSize: 16,
     fontWeight: 'bold',
-marginTop:2
-  },
-  companyName: {
-    color: '#888',
-    marginBottom: 10,
   },
   transactionDetails: {
-    marginBottom: 15,
+    marginTop: 15,
   },
   transactionRow: {
     color: 'white',
     fontSize: 14,
-    marginTop: 5
   },
-  price: {
-    color: 'white',
-    fontSize: 22,
-    fontWeight: 'bold',
-    textAlign: 'right',
-    marginTop: -35
-  },
-  closedText: {
-    color: 'white',
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 50,
-  },
-})
+});
 
 export default Trade;

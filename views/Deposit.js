@@ -105,9 +105,9 @@ const Wallet = () => {
           requestedAmount: depositAmount,
           totalAmount: availableBalance,
           timestamp: serverTimestamp(),
-          status:"deposit",
+          status:"pending",
           email,
-          type:"withdrawal"
+          type:"deposit"
         });
         setDepositAmount(0);
         Toast.show({ type: 'success', text1: 'request successfully sent' });

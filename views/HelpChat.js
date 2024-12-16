@@ -33,7 +33,7 @@ const HelpChat = () => {
         });
 
         // Descending order mein sort karein
-        messages.sort((a, b) => b.timestamp - a.timestamp);
+        messages.sort((a, b) => a.timestamp - b.timestamp);
 
         setMessages(messages);
       });

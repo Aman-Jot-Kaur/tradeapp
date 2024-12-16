@@ -3,14 +3,15 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import ManageProfile from './ManageProfile';
-
+import BottomNav from './BottomNav';
 const ManageProfileScreen = () => {
     const navigation = useNavigation();
   return (
     <View style={styles.container}>
       
       <ManageProfile/>
-      
+      <BottomNav />
+
     </View>
   );
 };

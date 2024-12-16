@@ -12,6 +12,7 @@ import MarketScreen from "./views/MarketScreen";
 import DepositScreen from "./views/DepositScreen";
 import WithdrawalScreen from "./views/WithdrawalScreen";
 import InviteLinkScreen from "./views/InviteLinkScreen";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import LedgerScreen from "./views/LedgerScreen";
 import ManageTradingAccountScreen from "./views/ManageTradingAccountScreen";
 import ManageProfileScreen from "./views/ManageProfileScreen";
@@ -49,16 +50,15 @@ const defaultBalances = [
 export default function App() {
   const [balances, setBalances] = useState(defaultBalances);
   // const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState(null);
 
   useEffect(() => {
     const getWalletData = async () => {
-      setLoading(true);
+      // setLoading(true);
       try {
         const storedUserId = await AsyncStorage.getItem("userIdSA");
         if (!storedUserId) {
           Toast.show({ type: "error", text1: "User ID not found" });
-          setLoading(false);
+          // setLoading(false);
           return;
         }
 
@@ -67,6 +67,7 @@ export default function App() {
 
         if (walletDoc.exists()) {
           setBalances(walletDoc.data().balances);
+          console.log(walletDoc.data(),"dsdsadsadsa")
         } else {
           await setDoc(walletRef, {
             userId: storedUserId,
@@ -78,7 +79,6 @@ export default function App() {
         console.error("Error fetching or creating wallet data:", error);
         Toast.show({ type: "error", text1: "Error loading wallet data" });
       } finally {
-        setLoading(false);
       }
     };
 
@@ -124,7 +124,7 @@ export default function App() {
     );
   }
   return (
-    <NavigationContainer>
+    <NavigationContainer style={{ backgroundColor: '#1c72b4' }}>
       <Drawer.Navigator
         initialRouteName="SignupScreen"
         drawerContent={(props) => <CustomDrawerContent {...props} />}
@@ -133,7 +133,8 @@ export default function App() {
           drawerStyle: {
             backgroundColor: "black", // Background color of the drawer
           },
-
+          headerShown: true, // Ensure header is shown globally
+          header: (props) => <CustomHeader {...props} />,
           header: () => <CustomHeader />,
           drawerActiveTintColor: "white", // Color for the active item
           drawerInactiveTintColor: "gray", // Color for inactive items
@@ -359,7 +360,7 @@ const styles = StyleSheet.create({
   container: {
     // flex: 1,
     backgroundColor: "#000",
-    padding: 20,
+    padding: 60,
   },
   balanceCard: {
     // flexDirection: 'row',
@@ -371,7 +372,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 5,
     marginBottom: 15,
-    marginRight: 15,
+    marginRight: 25,
   },
   label: {
     fontSize: 16,

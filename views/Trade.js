@@ -11,6 +11,16 @@ const Trade = () => {
   const [loading, setLoading] = useState(false);
   const [trades, setTrades] = useState([]);
 
+  const getCurrentDate = () => {
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+    const year = today.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const todayDate = getCurrentDate();
+
   useFocusEffect(
     React.useCallback(() => {
       const fetchTrades = async () => {
@@ -32,7 +42,9 @@ const Trade = () => {
           const querySnapshot = await getDocs(tradesQuery);
           const fetchedTrades = querySnapshot.docs.map(doc => doc.data());
           const filteredTrades = fetchedTrades.filter(trade =>
-            activeTab === 'Open' ? trade.status === 'Open' : trade.status === 'Close'
+            (activeTab === 'Open' ? trade.status === 'Open' : trade.status === 'Close'
+            && (trade.date === todayDate)) // Filter by email and today's date
+
           );
 
           setTrades(filteredTrades);

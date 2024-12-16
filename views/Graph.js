@@ -25,9 +25,7 @@ const TradingViewSymbolSearch = () => {
             
 
           }
-            #tradingview_widget {
-            transform:scale(1.3)
-            }
+            
             
         </style>
       </head>
@@ -36,8 +34,8 @@ const TradingViewSymbolSearch = () => {
         <script type="text/javascript">
           new TradingView.widget({
             container_id: "tradingview_widget",
-            width: "60%",
-            height: "70%",
+            width: "100%",
+            height: "100%",
             symbol: "EURUSD",
             interval: "D",
             timezone: "Etc/UTC",

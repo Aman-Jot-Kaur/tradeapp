@@ -135,7 +135,7 @@ const ManageProfile = () => {
     <View style={styles.container}>
       <View style={styles.optionContainer}>
         {/* Profile Option */}
-        <TouchableOpacity style={styles.option} onPress={() => navigation.navigate("Profile")}>
+        <TouchableOpacity style={styles.option} onPress={() => navigation.navigate("Manage Trading Account")}>
           <Icon name="person-outline" size={24} color="white" style={styles.icon} />
           <Text style={styles.optionText}>Profile</Text>
         </TouchableOpacity>

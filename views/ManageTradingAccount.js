@@ -5,9 +5,10 @@ import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebaseCon';
 import Toast from 'react-native-toast-message';
 import { useFocusEffect } from '@react-navigation/native';
-
-const ManageTradingAccount = ({ navigation }) => { // Added navigation prop
+import { useNavigation } from "@react-navigation/native";
+const ManageTradingAccount = () => { // Added navigation prop
   const [loading, setLoading] = useState(true);
+  const { navigate } = useNavigation();
   const [accountInfo, setAccountInfo] = useState({
     accountName: '',
     accountType: '',
@@ -121,7 +122,7 @@ const ManageTradingAccount = ({ navigation }) => { // Added navigation prop
   return (
     <ScrollView style={styles.container}>
       {/* Back Button */}
-      <TouchableOpacity onPress={() => navigation.navigate('Graph')} style={styles.backButton}>
+      <TouchableOpacity onPress={() => navigate('Profile')} style={styles.backButton}>
         <Text style={styles.backButtonText}>Back to Graph</Text>
       </TouchableOpacity>
   
@@ -221,6 +222,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
+    width:150
   },
   backButtonText: {
     color: '#FFFFFF',

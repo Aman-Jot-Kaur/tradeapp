@@ -14,7 +14,7 @@ import Toast from "react-native-toast-message";
 import * as DocumentPicker from "expo-document-picker"; // For file selection
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useNavigation } from "@react-navigation/native";
-
+import { query,getDocs, collection, querySnapshot, updateDoc, where, arrayUnion } from "firebase/firestore";
 // Simulating OTP generation and validation
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000); // Random 6 digit OTP
 
@@ -25,6 +25,8 @@ const SignupScreen = () => {
   const [generatedOtp, setGeneratedOtp] = useState(""); // Store generated OTP
   const [documentFile, setDocumentFile] = useState(null); // Store the document object
   const [documentURL, setDocumentURL] = useState(""); // Store document URL after upload
+  const [invitedby, setInvitedBy] = useState("");
+
   const navigation = useNavigation();
 
   const handleSendOTP = () => {
@@ -138,8 +140,23 @@ const SignupScreen = () => {
         email: email,
         document: documentURL,
         status: "inactive",
-      });
+        subadmin:["support"]
 
+      });
+      if(invitedby!==""){
+        const q = query(collection(db, "users"), where("email", "==", invitedby));
+        const querySnapshot = await getDocs(q);
+  
+        if (querySnapshot.docs.length > 0) {
+          const invitedByDoc = querySnapshot.docs[0].ref;
+          await updateDoc(invitedByDoc, {
+            invitedTraders: arrayUnion(email),
+          });
+          console.log("User added to invitedTraders");
+        } else {
+          console.error("User not found!");
+        }
+      }
       Toast.show({ type: "success", text1: "Signup Successful!" });
       navigation.navigate("Login");
     } catch (error) {
@@ -190,6 +207,15 @@ const SignupScreen = () => {
         onChangeText={setPassword}
         secureTextEntry
       />
+      <TextInput
+          style={styles.input}
+          placeholder="Enter invite code"
+          placeholderTextColor="rgba(255, 255, 255, 0.7)"
+          value={invitedby}
+          onChangeText={setInvitedBy}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
 
       {/* Document Upload */}
       <TouchableOpacity style={styles.button} onPress={handleDocumentUpload}>

@@ -2,50 +2,66 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 
-const TradingViewForexScreenerWidget = () => {
-  // TradingView Forex Screener widget HTML content
+const TradingViewTimelineWidget = () => {
+  // TradingView Timeline widget HTML content
   const tradingViewHTML = `
     <!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>TradingView Forex Screener</title>
+        <title>TradingView Timeline Widget</title>
         <style>
             body {
                 margin: 0;
                 padding: 0;
                 background-color: rgb(26, 26, 29);
-                color: white;
-                font-family: Arial, sans-serif;
                 height: 100vh; /* Full height */
                 display: flex;
                 justify-content: center;
                 align-items: center;
+                overflow: hidden;
             }
             .tradingview-widget-container {
                 width: 100%;
                 height: 100%;
-                overflow: hidden;
+                pointer-events: none; /* Disable all pointer events */
+            }
+            table {
+                pointer-events: auto; /* Enable pointer events for table */
+                overflow-y: scroll; /* Allow vertical scrolling */
             }
         </style>
     </head>
     <body>
         <div class="tradingview-widget-container">
-            <div id="tradingview-screener"></div>
-            <script type="text/javascript"
+            <div class="tradingview-widget-container__widget"></div>
+            <div class="tradingview-widget-copyright" style="pointer-events: none;">
+                <a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank">
+                    <
+                </a>
+            </div>
+            <script type="text/javascript" 
                 src="https://s3.tradingview.com/external-embedding/embed-widget-screener.js" 
                 async>
             {
+                "feedMode": "all_symbols",
+                "isTransparent": false,
+                "displayMode": "regular",
                 "width": "100%",
                 "height": "100%",
-                "defaultColumn": "performance",
-                "defaultScreen": "general",
-                "market": "forex",
-                "showToolbar": true,
                 "colorTheme": "dark",
                 "locale": "en"
             }
+            </script>
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Ensure only table is interactive
+                    const table = document.querySelector('table');
+                    if (table) {
+                        table.style.pointerEvents = 'auto';
+                    }
+                });
             </script>
         </div>
     </body>
@@ -60,6 +76,7 @@ const TradingViewForexScreenerWidget = () => {
         javaScriptEnabled={true}
         domStorageEnabled={true}
         style={styles.webview}
+        scrollEnabled={false} // Disable global scrolling, only allow table scrolling
       />
     </View>
   );
@@ -72,8 +89,8 @@ const styles = StyleSheet.create({
   },
   webview: {
     flex: 1,
-    height:6000 // Ensures the WebView takes up the full height of the parent container
+    height:3000
   },
 });
 
-export default TradingViewForexScreenerWidget;
+export default TradingViewTimelineWidget;

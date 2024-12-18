@@ -34,6 +34,7 @@ const TradingViewCurrencyPairsWidget = () => {
                 background-color: rgb(26, 26, 29);
                 color: white;
                 font-family: Arial, sans-serif;
+                pointer-events: none; /* Disable all pointer events globally */
             }
             .widget-container {
                 display: flex;
@@ -49,6 +50,7 @@ const TradingViewCurrencyPairsWidget = () => {
                 width: 100%;
                 height: 300px;
                 overflow: hidden;
+                pointer-events: none; /* Disable pointer events inside widgets */
             }
             .tradingview-widget-container iframe {
                 border-radius: 8px;
@@ -95,6 +97,7 @@ const TradingViewCurrencyPairsWidget = () => {
           javaScriptEnabled={true}
           domStorageEnabled={true}
           style={styles.webview}
+          scrollEnabled={false} // Disable default WebView scrolling
         />
       </ScrollView>
     </View>
@@ -111,8 +114,7 @@ const styles = StyleSheet.create({
   },
   webview: {
     flex: 1,
-    marginBottom: 20,
-    height:3000 // Space between each card for better visual clarity
+    height: 3000, // Adjust to allow for proper spacing between widgets
   },
 });
 

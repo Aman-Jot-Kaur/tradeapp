@@ -6,7 +6,7 @@ import { db } from '../firebaseCon';
 import Toast from 'react-native-toast-message';
 import { useFocusEffect } from '@react-navigation/native';
 
-const ManageTradingAccount = () => {
+const ManageTradingAccount = ({ navigation }) => { // Added navigation prop
   const [loading, setLoading] = useState(true);
   const [accountInfo, setAccountInfo] = useState({
     accountName: '',
@@ -118,9 +118,13 @@ const ManageTradingAccount = () => {
       .map(word => word.charAt(0).toUpperCase() + word.slice(1)) // Capitalize each word
       .join(' '); // Join the words back with a space
   
-  
   return (
     <ScrollView style={styles.container}>
+      {/* Back Button */}
+      <TouchableOpacity onPress={() => navigation.navigate('Graph')} style={styles.backButton}>
+        <Text style={styles.backButtonText}>Back to Graph</Text>
+      </TouchableOpacity>
+  
       <Text style={styles.header}>Manage Trading Accounts</Text>
   
       <View style={styles.section}>
@@ -167,7 +171,6 @@ const ManageTradingAccount = () => {
       </View>
     </ScrollView>
   );
-  
 };
 
 const styles = StyleSheet.create({
@@ -211,6 +214,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     flex: 1,
+  },
+  backButton: {
+    marginBottom: 20,
+    backgroundColor: '#1E90FF',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  backButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
 });
 

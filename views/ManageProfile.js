@@ -5,8 +5,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  ToastAndroid,
 } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { db } from '../firebaseCon';
 import { getDoc,doc , collection} from 'firebase/firestore';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -35,8 +35,8 @@ const ManageProfile = () => {
               if (user) {
                 await deleteUser(user);
                 await AsyncStorage.clear(); // Clear local data
-                ToastAndroid.show("Account deleted successfully.", ToastAndroid.SHORT);
-                navigation.replace("Login"); // Redirect to login
+                Toast.show({ type: 'success', text1: 'account delete success' });
+                navigation.navigate("Login");
               }
             } catch (error) {
               console.error("Error deleting account:", error);

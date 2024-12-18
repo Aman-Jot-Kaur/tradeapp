@@ -1,10 +1,9 @@
 import React from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import { WebView } from 'react-native-webview';
-
 // Get screen dimensions
 const { width, height } = Dimensions.get('window');
-
+import { doc } from 'firebase/firestore';
 const TradingViewSymbolSearch = () => {
   const widgetHTML = `
     <!DOCTYPE html>

@@ -14,7 +14,8 @@ import { auth } from "../firebaseCon";
 import Feather from "@expo/vector-icons/Feather";
 import Toast from "react-native-toast-message";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
+import { getDoc,doc } from 'firebase/firestore';
+import { db } from "../firebaseCon";
 const LoginScreen = () => {
   const navigation = useNavigation();
   const [email, setEmail] = useState("");
@@ -81,9 +82,17 @@ const LoginScreen = () => {
         text1: "Login successful!",
         visibilityTime: 2000,
       });
-
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) throw new Error('User document not found.');
+  
+      const userData = userDoc.data();
+      const status = userData.status; // Retrieve current email
       // Navigate to Graph screen
-      navigation.navigate("Graph"); // Using replace instead of navigate to prevent going back to login
+      if(status === 'active')
+      navigation.navigate("Graph"); 
+    else
+      navigation.navigate("Pending");
+      // Using replace instead of navigate to prevent going back to login
     } catch (error) {
       let errorMessage = "An error occurred during login";
 
@@ -122,16 +131,16 @@ const LoginScreen = () => {
         // gap:20,
       }}>
         
-      <Image source={{uri:'https://imgs.search.brave.com/_rLSardF2Tk6k3syUp7p2HvlnF5bDbgNRO53kevRg0g/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly93d3cu/bW9uZXlodWIuY28u/bnovdXBsb2Fkcy8x/LzEvMi8xLzExMjEw/MDE5OS9wdWJsaXNo/ZWQvYmxhY2tidWxs/LWxvZ28uanBnPzE3/MDEyNTQzMDE'}} style={{
-        width:'100%',
+      <Image source={{uri:'https://partners.blackbull.com/wp-content/uploads/2023/09/BlackBull_BlackBull-White-brand-icon-1536x1536.png'}} style={{
+        width:100,
         height:60,
       }}/>
-      {/* <Text style={{
+      <Text style={{
         color:'white',
         // textAlign:'center',
         fontSize:40,
         // fontFamily:'bold',
-      }}>Black Bulls</Text> */}
+      }}>Black Bulls</Text>
       </View>
       <Text style={styles.title}>Login</Text>
       {/* <Text style={{

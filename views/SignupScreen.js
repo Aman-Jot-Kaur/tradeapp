@@ -7,295 +7,228 @@ import {
   StyleSheet,
 } from "react-native";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  updateDoc,
-  arrayUnion,
-} from "firebase/firestore";
-import { db, auth } from "../firebaseCon";
+import { doc, setDoc } from "firebase/firestore";
+import emailjs from "@emailjs/browser"; // EmailJS Import
+import { auth, db, storage } from "../firebaseCon"; // Ensure Firebase is initialized
 import Toast from "react-native-toast-message";
-import { useEffect } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
-import Ionicons from "@expo/vector-icons/Ionicons";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import AntDesign from "@expo/vector-icons/AntDesign";
-import Entypo from "@expo/vector-icons/Entypo";
-const SignupScreen = ({ navigation }) => {
-  const [name, setName] = useState("");
+import * as DocumentPicker from "expo-document-picker"; // For file selection
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { useNavigation } from "@react-navigation/native";
+
+// Simulating OTP generation and validation
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000); // Random 6 digit OTP
+
+const SignupScreen = () => {
   const [email, setEmail] = useState("");
-  const [invitedby, setInvitedBy] = useState("");
   const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
+  const [generatedOtp, setGeneratedOtp] = useState(""); // Store generated OTP
+  const [documentFile, setDocumentFile] = useState(null); // Store the document object
+  const [documentURL, setDocumentURL] = useState(""); // Store document URL after upload
+  const navigation = useNavigation();
 
-  const [confirmPassword, setConfirmPassword] = useState("");
-  // Check if user is already logged in
-  useEffect(() => {
-    const checkLoginStatus = async () => {
-      try {
-        const userId = await AsyncStorage.getItem("userIdSA");
-        const userEmailSA = await AsyncStorage.getItem("userEmailSA");
+  const handleSendOTP = () => {
+    if (!email) {
+      Toast.show({
+        type: "error",
+        text1: "Please enter a valid email.",
+      });
+      return;
+    }
 
-        if (userId && userEmailSA) {
-          navigation.navigate("Graph");
+    const otp = generateOTP(); // Generate OTP
+    setGeneratedOtp(otp); // Store OTP locally
+
+    // EmailJS template params
+    const templateParams = {
+      user_email: email,
+      otp_code: otp, // Pass the generated OTP to the email template
+    };
+
+    // Send the OTP email using EmailJS
+    emailjs
+      .send(
+        "service_tinn6xj", // Replace with your EmailJS Service ID
+        "template_dqhhdt5", // Replace with your EmailJS Template ID
+        templateParams,
+        "OcTpocYuldS4L7Y0b" // Replace with your EmailJS Public Key
+      )
+      .then(() => {
+        console.log("OTP sent successfully to:", email);
+        Toast.show({
+          type: "success",
+          text1: `OTP sent to ${email}`,
+        });
+      })
+      .catch((error) => {
+        console.error("Error sending email:", error);
+        Toast.show({
+          type: "error",
+          text1: "Failed to send OTP.",
+        });
+      });
+  };
+
+  const handleVerifyOTP = () => {
+    console.log(otp,generatedOtp);
+    if (otp == generatedOtp) {
+      Toast.show({
+        type: "success",
+        text1: "OTP Verified Successfully!",
+      });
+    } else {
+      Toast.show({
+        type: "error",
+        text1: "Invalid OTP.",
+      });
+    }
+  };
+
+  const handleDocumentUpload = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync();
+      console.log("DocumentPicker result:", result);
+  
+      if (!result.canceled) {
+        const file = result.assets ? result.assets[0] : result.output[0]; // Extract the file
+        const fileName = file.name;
+        const fileUri = file.uri;
+  
+        setDocumentFile(file); // Store the document for display
+        console.log("Uploading file:", fileName);
+  
+        const fileRef = ref(storage, `documents/${fileName}`);
+        let blob;
+  
+        // Web handles `data:` URIs differently; ensure the blob is created properly
+        if (fileUri.startsWith("data:")) {
+          blob = await (await fetch(fileUri)).blob();
+        } else {
+          const response = await fetch(fileUri);
+          blob = await response.blob();
         }
-      } catch (error) {
-        console.error("Error checking login status:", error);
+  
+        // Upload file to Firebase Storage
+        await uploadBytes(fileRef, blob);
+        const downloadURL = await getDownloadURL(fileRef);
+  
+        console.log("File uploaded successfully. URL:", downloadURL);
+        setDocumentURL(downloadURL); // Save download URL for later use
+        Toast.show({ type: "success", text1: "Document Uploaded!" });
+      } else {
+        console.log("Document selection was canceled.");
       }
-    };
+    } catch (error) {
+      console.error("Error uploading document:", error);
+      Toast.show({ type: "error", text1: "Failed to upload document." });
+    }
+  };
+  
 
-    checkLoginStatus(); // Call the async function
-
-    // Optional cleanup function
-    return () => {
-      // Any cleanup code if needed
-    };
-  }, [navigation]);
   const handleSignup = async () => {
-    // Basic input validation
-    if (!name || !email || !password || !confirmPassword) {
-      Toast.show({
-        type: "error",
-        text1: "Please fill in all fields.",
-      });
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      Toast.show({
-        type: "error",
-        text1: "Passwords do not match!",
-      });
-      return;
-    }
-
-    const emailRegex = /\S+@\S+\.\S+/; // Basic regex for email validation
-    if (!emailRegex.test(email)) {
-      Toast.show({
-        type: "error",
-        text1: "Please enter a valid email address.",
-      });
+    if (!email || !password) {
+      console.log(email,password,documentURL)
+      Toast.show({ type: "error", text1: "Please fill in all fields." });
       return;
     }
 
     try {
-      // Create user with email and password
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const user = userCredential.user;
-
-      // Store user data in Firestore
-      await setDoc(doc(db, "users", user.uid), {
-        name: name,
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      await setDoc(doc(db, "users", userCredential.user.uid), {
         email: email,
-        subadmin:["superadmin31@gmail.com"]
+        document: documentURL,
+        status: "inactive",
       });
 
-      // Find user by invitedBy emailif
-      if(invitedby!==""){
-      const q = query(collection(db, "users"), where("email", "==", invitedby));
-      const querySnapshot = await getDocs(q);
-
-      if (querySnapshot.docs.length > 0) {
-        const invitedByDoc = querySnapshot.docs[0].ref;
-        await updateDoc(invitedByDoc, {
-          invitedTraders: arrayUnion(email),
-        });
-        console.log("User added to invitedTraders");
-      } else {
-        console.error("User not found!");
-      }
-    }
-      // Clear the form after successful signup
-      setName("");
-      setEmail("");
-      setPassword("");
-      setConfirmPassword("");
-      console.log("User signed up and data stored:", user.uid);
-      navigation.navigate("Login"); // Adjust as needed
+      Toast.show({ type: "success", text1: "Signup Successful!" });
+      navigation.navigate("Login");
     } catch (error) {
-      if (error.code === "auth/email-already-in-use") {
-        Toast.show({
-          type: "error",
-          text1: "This email is already in use.",
-        });
-      } else if (error.code === "auth/invalid-email") {
-        Toast.show({
-          type: "error",
-          text1: "The email address is not valid.",
-        });
-      } else if (error.code === "auth/weak-password") {
-        Toast.show({
-          type: "error",
-          text1: "The password is too weak.",
-        });
-      } else {
-        Toast.show({
-          type: "error",
-          text1: error.message,
-        });
-      }
       console.error("Error signing up:", error);
+      Toast.show({ type: "error", text1: "Signup Failed!" });
     }
   };
 
   return (
     <View style={styles.container}>
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "center",
-        }}
-      >
-        <Entypo name="add-user" size={34} color="white" />
-        <Text style={styles.title}>Sign Up</Text>
-      </View>
-
-      <View style={styles.inputContainer}>
-        <FontAwesome name="user" size={24} color="white" />
-        <TextInput
-          style={styles.input}
-          placeholder="Full Name"
-          placeholderTextColor="rgba(255, 255, 255, 0.7)"
-          value={name}
-          onChangeText={setName}
-        />
-      </View>
-      {/* Name Input */}
+      <Text style={styles.title}>Sign Up</Text>
 
       {/* Email Input */}
-      <View style={styles.inputContainer}>
-        <Ionicons name="mail" size={32} color="white" />
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          placeholderTextColor="rgba(255, 255, 255, 0.7)"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-      </View>
-      <View style={styles.inputContainer}>
-        <MaterialIcons name="wifi-password" size={24} color="white" />
-        {/* Password Input */}
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor="rgba(255, 255, 255, 0.7)"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry={true}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-      </View>
-      <View style={styles.inputContainer}>
-        <MaterialIcons name="wifi-password" size={24} color="white" />
-        {/* Confirm Password Input */}
-        <TextInput
-          style={styles.input}
-          placeholder="Confirm Password"
-          placeholderTextColor="rgba(255, 255, 255, 0.7)"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry={true}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-      </View>
-      <View style={styles.inputContainer}>
-        <AntDesign name="addfolder" size={24} color="white" />
-        <TextInput
-          style={styles.input}
-          placeholder="Enter invite code"
-          placeholderTextColor="rgba(255, 255, 255, 0.7)"
-          value={invitedby}
-          onChangeText={setInvitedBy}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-      </View>
+      <TextInput
+        style={styles.input}
+        placeholder="Email"
+        placeholderTextColor="gray"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+      />
 
-      {/*setInvitedBy}
+      {/* Send OTP Button */}
+      <TouchableOpacity style={styles.button} onPress={handleSendOTP}>
+        <Text style={styles.buttonText}>Send OTP</Text>
+      </TouchableOpacity>
+
+      {/* OTP Input */}
+      <TextInput
+        style={styles.input}
+        placeholder="Enter OTP"
+        placeholderTextColor="rgba(255, 255, 255, 0.7)"
+        value={otp}
+        onChangeText={setOtp}
+        keyboardType="numeric" // Ensures English numbers are used
+        maxLength={6} // Limiting to 6 digits if required
+      />
+      <TouchableOpacity style={styles.button} onPress={handleVerifyOTP}>
+        <Text style={styles.buttonText}>Verify OTP</Text>
+      </TouchableOpacity>
+
+      {/* Password Input */}
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        placeholderTextColor="gray"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+      />
+
+      {/* Document Upload */}
+      <TouchableOpacity style={styles.button} onPress={handleDocumentUpload}>
+        <Text style={styles.buttonText}>
+          {documentFile ? `Document Selected: ${documentFile.name}` : "Upload Aadhar/PAN Card"}
+        </Text>
+      </TouchableOpacity>
 
       {/* Signup Button */}
       <TouchableOpacity style={styles.button} onPress={handleSignup}>
         <Text style={styles.buttonText}>Sign Up</Text>
       </TouchableOpacity>
 
-      {/* Optional: Navigate to Login Page */}
-      <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-        <Text style={styles.loginText}>Already have an account? Login</Text>
+      {/* Login Navigation */}
+      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Login')}>
+        <Text style={styles.buttonText}>Login instead?</Text>
       </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#000", // Black background
-    justifyContent: "center",
-    paddingHorizontal: 20,
-  },
-  title: {
-    color: "#fff",
-    fontSize: 30,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 40,
-    marginLeft: 10,
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 10,
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    marginBottom: 20,
-    // width: "90%",
-    borderWidth: 1,
-    marginHorizontal: 10,
-    borderColor: "#1E90FF",
-  },
+  container: { flex: 1, justifyContent: "center", padding: 20, backgroundColor: "#000" },
+  title: { color: "white", fontSize: 24, textAlign: "center", marginBottom: 20 },
   input: {
-    // backgroundColor: "rgba(255, 255, 255, 0.1)",
-    color: "#fff",
-    marginLeft: 20,
-    // borderRadius: 10,
-    // paddingVertical: 15,
-    // paddingHorizontal: 20,
-    // marginBottom: 20,
-    // borderWidth: 1,
-    // borderColor: "#1E90FF", // Blue border
+    backgroundColor: "rgba(255,255,255,0.1)",
+    color: "white",
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 20,
   },
   button: {
-    backgroundColor: "#1E90FF", // Blue button
-    paddingVertical: 15,
+    backgroundColor: "#1E90FF",
+    padding: 15,
     borderRadius: 10,
     alignItems: "center",
     marginBottom: 20,
   },
-  buttonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  loginText: {
-    color: "#1E90FF", // Blue text for login link
-    textAlign: "center",
-    marginTop: 20,
-    fontSize: 16,
-  },
+  buttonText: { color: "white", fontWeight: "bold" },
 });
 
 export default SignupScreen;

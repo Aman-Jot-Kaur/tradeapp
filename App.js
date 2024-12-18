@@ -6,6 +6,8 @@ import {
   DrawerContentScrollView,
   DrawerItemList,
 } from "@react-navigation/drawer";
+import { useRef } from "react";
+import { TouchableOpacity } from "react-native";
 import GraphScreen from "./views/GraphScreen";
 import TradeScreen from "./views/TradeScreen";
 import MarketScreen from "./views/MarketScreen";
@@ -21,6 +23,7 @@ import BlotterScreen from "./views/BlotterScreen";
 import WalletScreen from "./views/WalletScreen";
 import StockInformationScreen from "./views/StockInformationScreen";
 import LoginScreen from "./views/LoginScreen";
+import VerificationPending from "./views/Pending";
 import SignupScreen from "./views/SignupScreen";
 import CustomHeader from "./views/TopBar";
 import ContactScreen from "./views/ContactScreen";
@@ -86,15 +89,26 @@ export default function App() {
   }, []);
 
   function CustomDrawerContent(props) {
+    const scrollViewRef = useRef(null); // Ref for ScrollView
+
+    const [currentScrollX, setCurrentScrollX] = useState(0); // Track current scroll position
+
+    const handleScroll = (direction) => {
+      const newScrollX = direction === "left" ? currentScrollX - 180 : currentScrollX + 180;
+      setCurrentScrollX(newScrollX); // Update the current scroll position
+  
+      scrollViewRef.current?.scrollTo({
+        x: newScrollX, // Scroll to the calculated position
+        animated: true,
+      });
+    };
+  
     return (
       <DrawerContentScrollView {...props} contentContainerStyle={{ flex: 1 }}>
         {/* Header Section */}
         <View style={styles.headerContainer}>
           {/* Logo */}
-          <Image
-            source={require("./assets/icon.png")} // Replace with your logo path
-            style={styles.logo}
-          />
+          <Image source={{uri:'https://partners.blackbull.com/wp-content/uploads/2023/09/BlackBull_BlackBull-White-brand-icon-1536x1536.png'}} style={styles.logo}/>
           {/* App Name */}
           <Text style={styles.appName}>Black Bulls</Text>
         </View>
@@ -105,12 +119,21 @@ export default function App() {
         </View>
 
         {/* Footer Section */}
-        <View
-          style={{
-            padding: 10,
-          }}
-        >
-          <ScrollView style={styles.container} horizontal>
+        <View style={{ padding: 10 }}>
+        <View style={styles.scrollContainer}>
+          {/* Left Arrow */}
+          <TouchableOpacity onPress={() => handleScroll("left")}>
+            <MaterialIcons name="chevron-left" size={40} color="white" />
+          </TouchableOpacity>
+
+          {/* Scrollable Content */}
+          <ScrollView
+            horizontal
+            ref={scrollViewRef}
+            nestedScrollEnabled={true}
+            style={styles.container}
+            showsHorizontalScrollIndicator={false}
+          >
             {balances.map((balance, index) => (
               <View key={index} style={styles.balanceCard}>
                 <Text style={styles.label}>{balance.label}</Text>
@@ -119,14 +142,21 @@ export default function App() {
             ))}
             {balances.length === 0 && <Text>No balance data yet</Text>}
           </ScrollView>
+
+          {/* Right Arrow */}
+          <TouchableOpacity onPress={() => handleScroll("right")}>
+            <MaterialIcons name="chevron-right" size={40} color="white" />
+          </TouchableOpacity>
         </View>
+      </View>
       </DrawerContentScrollView>
     );
   }
   return (
     <NavigationContainer style={{ backgroundColor: '#1c72b4' }}>
       <Drawer.Navigator
-        initialRouteName="SignupScreen"
+      nestedScrollEnabled={true} // Ensure this is set
+      initialRouteName="SignupScreen"
         drawerContent={(props) => <CustomDrawerContent {...props} />}
         screenOptions={{
           // headerShown: false,¯
@@ -137,7 +167,9 @@ export default function App() {
           header: (props) => <CustomHeader {...props} />,
           header: () => <CustomHeader />,
           drawerActiveTintColor: "white", // Color for the active item
-          drawerInactiveTintColor: "gray", // Color for inactive items
+          drawerInactiveTintColor: "gray", 
+          swipeEnabled: true, // Allow swipe gestures
+          // Color for inactive items
         }}
       >
         <Drawer.Screen
@@ -147,6 +179,14 @@ export default function App() {
           }}
           name="Signup"
           component={SignupScreen}
+        />
+        <Drawer.Screen
+          options={{
+            headerShown: false,
+            drawerItemStyle: { display: "none" }, // Hide this item
+          }}
+          name="Pending"
+          component={VerificationPending}
         />
         <Drawer.Screen
           name="Deposit"
@@ -360,17 +400,19 @@ const styles = StyleSheet.create({
   container: {
     // flex: 1,
     backgroundColor: "#000",
-    padding: 60,
+   
   },
   balanceCard: {
     // flexDirection: 'row',
-    justifyContent: "space-between",
+    justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#1b1b1b",
     borderRadius: 10,
     borderColor: "#fff",
     borderWidth: 1,
     padding: 5,
+    width:150,
+    gap:20,
     marginBottom: 15,
     marginRight: 25,
   },
@@ -392,5 +434,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     color: "white",
+  },
+  scrollContainer: {
+    flexDirection: "row",
+    alignItems: "center",
   },
 });

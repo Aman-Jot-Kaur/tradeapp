@@ -62,7 +62,16 @@ const Sidebar = () => {
         <Icon name="chatbubble-ellipses-outline" size={20} color="#fff" />
         <Text style={styles.menuText}>Live Chat</Text>
       </TouchableOpacity>
-      
+      <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('About')}>
+        <Icon name="information-circle-outline" size={20} color="#fff" />
+        <Text style={styles.menuText}>About</Text>
+      </TouchableOpacity>
+
+      {/* Privacy Policy Menu Item */}
+      <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('PrivacyPolicy')}>
+        <Icon name="shield-checkmark-outline" size={20} color="#fff" />
+        <Text style={styles.menuText}>Privacy Policy</Text>
+      </TouchableOpacity>
       {/* Temporary route for login */}
       <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('LoginScreen')}>
         <Icon name="chatbubble-ellipses-outline" size={20} color="#fff" />
@@ -74,9 +83,6 @@ const Sidebar = () => {
           <Text style={styles.logoutText}>Log out</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => navigation.navigate('PrivacyPolicy')}>
-          <Text style={styles.privacyText}>Privacy Policy</Text>
-        </TouchableOpacity>
       </View>
     </View>
   );

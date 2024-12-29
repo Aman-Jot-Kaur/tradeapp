@@ -18,7 +18,7 @@ const ManageTradingAccount = () => { // Added navigation prop
     ifscCode: '',
     bankAccountNumber: '',
     upiId: '',
-    kycImage: '',
+    document: '',
   });
   const [userId, setUserId] = useState(null);
 
@@ -123,7 +123,7 @@ const ManageTradingAccount = () => { // Added navigation prop
     <ScrollView style={styles.container}>
       {/* Back Button */}
       <TouchableOpacity onPress={() => navigate('Profile')} style={styles.backButton}>
-        <Text style={styles.backButtonText}>Back to Graph</Text>
+        <Text style={styles.backButtonText}>Back </Text>
       </TouchableOpacity>
   
       <Text style={styles.header}>Manage Trading Accounts</Text>
@@ -166,7 +166,7 @@ const ManageTradingAccount = () => { // Added navigation prop
           style={styles.input}
           placeholder="Enter KYC Image URL"
           placeholderTextColor="#A1A1A1"
-          value={accountInfo.kycImage}
+          value={accountInfo.document}
           onChangeText={(value) => handleAccountInfoChange('kycImage', value)}
         />
       </View>

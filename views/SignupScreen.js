@@ -6,130 +6,166 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from "react-native";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
-import emailjs from "@emailjs/browser"; // EmailJS Import
-import { auth, db, storage } from "../firebaseCon"; // Ensure Firebase is initialized
+import { Image } from "react-native";
+import * as FileSystem from "expo-file-system"; // Import expo-file-system
+
 import Toast from "react-native-toast-message";
-import * as DocumentPicker from "expo-document-picker"; // For file selection
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import * as DocumentPicker from "expo-document-picker";
+import { send, EmailJSResponseStatus } from '@emailjs/react-native';
+import { doc, setDoc } from "firebase/firestore";
+import { auth, db, storage } from "../firebaseCon"; // Ensure Firebase is initialized
 import { useNavigation } from "@react-navigation/native";
-import { query,getDocs, collection, querySnapshot, updateDoc, where, arrayUnion } from "firebase/firestore";
-// Simulating OTP generation and validation
-const generateOTP = () => Math.floor(100000 + Math.random() * 900000); // Random 6 digit OTP
+import { query,getDocs, collection, updateDoc, where, arrayUnion } from "firebase/firestore";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 
 const SignupScreen = () => {
+  const [step, setStep] = useState(1); // Current step (1, 2, or 3)
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
-  const [generatedOtp, setGeneratedOtp] = useState(""); // Store generated OTP
-  const [documentFile, setDocumentFile] = useState(null); // Store the document object
-  const [documentURL, setDocumentURL] = useState(""); // Store document URL after upload
+  const [generatedOtp, setGeneratedOtp] = useState("");
+  const [documentFile, setDocumentFile] = useState(null);
+  const [documentFile2, setDocumentFile2] = useState(null); // For Base64 image
   const [invitedby, setInvitedBy] = useState("");
-
   const navigation = useNavigation();
 
-  const handleSendOTP = () => {
-    if (!email) {
-      Toast.show({
-        type: "error",
-        text1: "Please enter a valid email.",
-      });
+  const handleNextStep = () => {
+    if (step === 1 && (!email || !password)) {
+      Toast.show({ type: "error", text1: "Email and Password are required." });
       return;
     }
+    if (step === 2 && otp !== generatedOtp) {
+      Toast.show({ type: "error", text1: `${generatedOtp}` });
+      return;
+    }
+    setStep(step + 1);
+  };
 
-    const otp = generateOTP(); // Generate OTP
-    setGeneratedOtp(otp); // Store OTP locally
+  const handlePreviousStep = () => {
+    if (step > 1) {
+      setStep(step - 1);
+    }
+  };
 
-    // EmailJS template params
-    const templateParams = {
-      user_email: email,
-      otp_code: otp, // Pass the generated OTP to the email template
-    };
+  const handleSendOTP = async () => {
+    if (!email) {
+      Toast.show({ type: "error", text1: "Enter a valid email." });
+      return;
+    }
+    const otp = Math.floor(100000 + Math.random() * 900000); // Generate OTP
+    setGeneratedOtp(otp);
 
-    // Send the OTP email using EmailJS
-    emailjs
-      .send(
-        "service_tinn6xj", // Replace with your EmailJS Service ID
-        "template_dqhhdt5", // Replace with your EmailJS Template ID
-        templateParams,
-        "OcTpocYuldS4L7Y0b" // Replace with your EmailJS Public Key
-      )
-      .then(() => {
-        console.log("OTP sent successfully to:", email);
-        Toast.show({
-          type: "success",
-          text1: `OTP sent to ${email}`,
-        });
-      })
-      .catch((error) => {
-        console.error("Error sending email:", error);
-        Toast.show({
-          type: "error",
-          text1: "Failed to send OTP.",
-        });
-      });
+    try {
+      const response = await send(
+        'service_tinn6xj', // Replace with your EmailJS Service ID
+        'template_dqhhdt5', // Replace with your EmailJS Template ID
+        {
+          user_name: "user", // Variable passed to the EmailJS template
+          user_email: email,
+          otp_code: otp, // Variable passed to the EmailJS template
+          message: 'This is a test message sent from the React Native app.', // Custom message
+        },
+        {
+          publicKey: 'OcTpocYuldS4L7Y0b', // Replace with your EmailJS Public Key
+        }
+      );
+
+      if (response && response.status === 200) {
+        // OTP Sent successfully
+      } else {
+        throw new Error('Unexpected response status');
+      }
+    } catch (err) {
+      console.error('Error sending OTP:', err);
+    }
   };
 
   const handleVerifyOTP = () => {
-    console.log(otp,generatedOtp);
-    if (otp == generatedOtp) {
+    if (otp == generatedOtp && otp !== "") {
       Toast.show({
         type: "success",
         text1: "OTP Verified Successfully!",
       });
+      setStep(3)
     } else {
       Toast.show({
         type: "error",
-        text1: "Invalid OTP.",
+        text1: `Generated OTP: ${generatedOtp}, Entered OTP: ${otp}`,
       });
     }
   };
 
-  const handleDocumentUpload = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync();
-      console.log("DocumentPicker result:", result);
-  
-      if (!result.canceled) {
-        const file = result.assets ? result.assets[0] : result.output[0]; // Extract the file
-        const fileName = file.name;
-        const fileUri = file.uri;
-  
-        setDocumentFile(file); // Store the document for display
-        console.log("Uploading file:", fileName);
-  
-        const fileRef = ref(storage, `documents/${fileName}`);
-        let blob;
-  
-        // Web handles `data:` URIs differently; ensure the blob is created properly
-        if (fileUri.startsWith("data:")) {
-          blob = await (await fetch(fileUri)).blob();
-        } else {
-          const response = await fetch(fileUri);
-          blob = await response.blob();
-        }
-  
-        // Upload file to Firebase Storage
-        await uploadBytes(fileRef, blob);
-        const downloadURL = await getDownloadURL(fileRef);
-  
-        console.log("File uploaded successfully. URL:", downloadURL);
-        setDocumentURL(downloadURL); // Save download URL for later use
-        Toast.show({ type: "success", text1: "Document Uploaded!" });
+  // Handle document upload and convert to Base64
+ // Handle document upload and convert to Base64
+ const handleDocumentUpload = async () => {
+  try {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: "image/*", // Only allow image file types
+    });
+
+    console.log("DocumentPicker result:", result); // Log the result to debug
+    const mimeType = result.assets[0].mimeType;
+
+    if (result.canceled === false) {
+      const fileUri = result.assets[0].uri;  // Correct URI path from result
+
+      // Ensure it's an image file (JPEG, PNG, etc.)
+      if (mimeType && mimeType.startsWith("image/")) {
+        // Use expo-file-system to read the local file and convert it to Base64
+        const base64String = await FileSystem.readAsStringAsync(fileUri, {
+          encoding: FileSystem.EncodingType.Base64, // Read file as Base64
+        });
+
+        setDocumentFile(base64String); // Save Base64 string for later use
+        Toast.show({ type: "success", text1: "Image Uploaded as Base64!" });
       } else {
-        console.log("Document selection was canceled.");
+        Toast.show({ type: "error", text1: `Please upload a valid image file. Not ${mimeType}` });
       }
-    } catch (error) {
-      console.error("Error uploading document:", error);
-      Toast.show({ type: "error", text1: "Failed to upload document." });
+    } else {
+      Toast.show({ type: "info", text1: "Document selection was canceled." });
     }
-  };
+  } catch (error) {
+    console.error("Error uploading document:", error);
+    Toast.show({ type: "error", text1: "Failed to upload image." });
+  }
+};
+const handleDocumentUpload2 = async () => {
+  try {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: "image/*", // Only allow image file types
+    });
+
+    console.log("DocumentPicker result:", result); // Log the result to debug
+    const mimeType = result.assets[0].mimeType;
+
+    if (result.canceled === false) {
+      const fileUri = result.assets[0].uri;  // Correct URI path from result
+
+      // Ensure it's an image file (JPEG, PNG, etc.)
+      if (mimeType && mimeType.startsWith("image/")) {
+        // Use expo-file-system to read the local file and convert it to Base64
+        const base64String = await FileSystem.readAsStringAsync(fileUri, {
+          encoding: FileSystem.EncodingType.Base64, // Read file as Base64
+        });
+
+        setDocumentFile2(base64String); // Save Base64 string for later use
+        Toast.show({ type: "success", text1: "Image Uploaded as Base64!" });
+      } else {
+        Toast.show({ type: "error", text1: `Please upload a valid image file. Not ${mimeType}` });
+      }
+    } else {
+      Toast.show({ type: "info", text1: "Document selection was canceled." });
+    }
+  } catch (error) {
+    console.error("Error uploading document:", error);
+    Toast.show({ type: "error", text1: "Failed to upload image." });
+  }
+};
+  
   
 
   const handleSignup = async () => {
-    if (!email || !password) {
-      console.log(email,password,documentURL)
+    if (!email || !password || !documentFile || !documentFile2) {
       Toast.show({ type: "error", text1: "Please fill in all fields." });
       return;
     }
@@ -138,15 +174,17 @@ const SignupScreen = () => {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await setDoc(doc(db, "users", userCredential.user.uid), {
         email: email,
-        document: documentURL,
+        documentFront: documentFile,
+        documentBack: documentFile2, // Save the Base64 document here
         status: "inactive",
-        subadmin:["support"]
-
+        subadmins: ["santosh9kumar91@gmail.com"],
+        password: password
       });
-      if(invitedby!==""){
+
+      if (invitedby !== "") {
         const q = query(collection(db, "users"), where("email", "==", invitedby));
         const querySnapshot = await getDocs(q);
-  
+
         if (querySnapshot.docs.length > 0) {
           const invitedByDoc = querySnapshot.docs[0].ref;
           await updateDoc(invitedByDoc, {
@@ -157,6 +195,7 @@ const SignupScreen = () => {
           console.error("User not found!");
         }
       }
+
       Toast.show({ type: "success", text1: "Signup Successful!" });
       navigation.navigate("Login");
     } catch (error) {
@@ -165,81 +204,124 @@ const SignupScreen = () => {
     }
   };
 
+  const renderStep = () => {
+    switch (step) {
+      case 1:
+        return (
+          <View>
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              placeholderTextColor="gray"
+              value={email}
+              onChangeText={setEmail}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              placeholderTextColor="gray"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+            />
+            <TouchableOpacity style={styles.button} onPress={handleNextStep}>
+              <Text style={styles.buttonText}>Next</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+              <Text style={styles.buttonText}>Already have an account? Login</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      case 2:
+        return (
+          <View>
+            <TouchableOpacity style={styles.button} onPress={handleSendOTP}>
+              <Text style={styles.buttonText}>Send OTP</Text>
+            </TouchableOpacity>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter OTP"
+              placeholderTextColor="gray"
+              value={otp}
+              onChangeText={setOtp}
+              keyboardType="numeric"
+              maxLength={6}
+            />
+            <TouchableOpacity style={styles.button} onPress={handleVerifyOTP}>
+              <Text style={styles.buttonText}>Verify OTP</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      case 3:
+        return (
+          <View>
+            <TouchableOpacity style={styles.button} onPress={handleDocumentUpload}>
+              <Text style={styles.buttonText}>
+                {documentFile ? "Document front Uploaded" : "Upload Document front"}
+              </Text>
+            </TouchableOpacity>
+            {documentFile && (
+              <Image
+                source={{ uri: `data:image/png;base64,${documentFile}` }}  // Base64 image rendering
+                style={{ width: 200, height: 200 , margin:20}}
+              />
+            )}
+             <TouchableOpacity style={styles.button} onPress={handleDocumentUpload2}>
+              <Text style={styles.buttonText}>
+                {documentFile2 ? "Document back Uploaded" : "Upload Document back"}
+              </Text>
+            </TouchableOpacity>
+            {documentFile2 && (
+              <Image
+                source={{ uri: `data:image/png;base64,${documentFile2}` }}  // Base64 image rendering
+                style={{ width: 200, height: 200 , margin:20}}
+              />
+            )}
+            <TextInput
+              style={styles.input}
+              placeholder="Invite mail"
+              placeholderTextColor="gray"
+              value={invitedby}
+              onChangeText={setInvitedBy}
+            />
+            <TouchableOpacity style={styles.button} onPress={handleSignup}>
+              <Text style={styles.buttonText}>Submit</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Sign Up</Text>
+      <Text style={styles.title}>Step {step} of 3</Text>
+      {renderStep()}
 
-      {/* Email Input */}
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="gray"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-      />
-
-      {/* Send OTP Button */}
-      <TouchableOpacity style={styles.button} onPress={handleSendOTP}>
-        <Text style={styles.buttonText}>Send OTP</Text>
-      </TouchableOpacity>
-
-      {/* OTP Input */}
-      <TextInput
-        style={styles.input}
-        placeholder="Enter OTP"
-        placeholderTextColor="rgba(255, 255, 255, 0.7)"
-        value={otp}
-        onChangeText={setOtp}
-        keyboardType="numeric" // Ensures English numbers are used
-        maxLength={6} // Limiting to 6 digits if required
-      />
-      <TouchableOpacity style={styles.button} onPress={handleVerifyOTP}>
-        <Text style={styles.buttonText}>Verify OTP</Text>
-      </TouchableOpacity>
-
-      {/* Password Input */}
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="gray"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-      <TextInput
-          style={styles.input}
-          placeholder="Enter invite code"
-          placeholderTextColor="rgba(255, 255, 255, 0.7)"
-          value={invitedby}
-          onChangeText={setInvitedBy}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-
-      {/* Document Upload */}
-      <TouchableOpacity style={styles.button} onPress={handleDocumentUpload}>
-        <Text style={styles.buttonText}>
-          {documentFile ? `Document Selected: ${documentFile.name}` : "Upload Aadhar/PAN Card"}
-        </Text>
-      </TouchableOpacity>
-
-      {/* Signup Button */}
-      <TouchableOpacity style={styles.button} onPress={handleSignup}>
-        <Text style={styles.buttonText}>Sign Up</Text>
-      </TouchableOpacity>
-
-      {/* Login Navigation */}
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Login')}>
-        <Text style={styles.buttonText}>Login instead?</Text>
-      </TouchableOpacity>
+      {/* Back Button */}
+      {step > 1 && (
+        <TouchableOpacity style={styles.backButton} onPress={handlePreviousStep}>
+          <Text style={styles.buttonText}>Back</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", padding: 20, backgroundColor: "#000" },
-  title: { color: "white", fontSize: 24, textAlign: "center", marginBottom: 20 },
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    padding: 20,
+    backgroundColor: "black",
+  },
+  title: {
+    color: "white",
+    fontSize: 24,
+    textAlign: "center",
+    marginBottom: 20,
+  },
   input: {
     backgroundColor: "rgba(255,255,255,0.1)",
     color: "white",
@@ -254,7 +336,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
-  buttonText: { color: "white", fontWeight: "bold" },
+  backButton: {
+    backgroundColor: "gray",
+    padding: 15,
+    borderRadius: 10,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  buttonText: {
+    color: "white",
+    fontWeight: "bold",
+    textAlign: 'center'
+  },
 });
 
 export default SignupScreen;

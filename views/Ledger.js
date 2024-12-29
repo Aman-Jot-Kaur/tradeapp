@@ -73,7 +73,7 @@ const Ledger = () => {
                 {request.type.charAt(0).toUpperCase() + request.type.slice(1)}
               </Text>
               <Text style={styles.detail}>
-                Amount: {request.requestedAmount} Rs
+                Amount: {request.amount} Rs
               </Text>
               {/* <Text style={styles.detail}>
                 Total Amount: {request.totalAmount}

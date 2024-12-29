@@ -59,29 +59,29 @@ const InviteLink = () => {
     }
   };
 
-  // const fetchInviter = async (userId) => {
-  //   const inviterRef = doc(db, "invitationList", userId);
-  //   const docSnap = await getDoc(inviterRef);
+  const fetchInviter = async (userId) => {
+    const inviterRef = doc(db, "invitationList", userId);
+    const docSnap = await getDoc(inviterRef);
     
-  //   if (docSnap.exists()) {
-  //     setInviter(docSnap.data().inviter || '');
-  //   } else {
-  //     // Set the document with default values if it doesn't exist
-  //     await setDoc(inviterRef, { inviter: '' });
-  //     setInviter(''); // Set inviter state to empty
-  //   }
-  // };
+    if (docSnap.exists()) {
+      setInviter(docSnap.data().inviter || '');
+    } else {
+      // Set the document with default values if it doesn't exist
+      await setDoc(inviterRef, { inviter: '' });
+      setInviter(''); // Set inviter state to empty
+    }
+  };
 
-  // const saveInviter = async () => {
-  //   if (inviter.trim() === '') return;
+  const saveInviter = async () => {
+    if (inviter.trim() === '') return;
   
-  //   try {
-  //     const inviterRef = doc(db, "invitationList", userId);
-  //     await setDoc(inviterRef, { inviter }, { merge: true }); // Use setDoc with merge option
-  //   } catch (error) {
-  //     console.error('Error saving inviter:', error);
-  //   }
-  // };
+    try {
+      const inviterRef = doc(db, "invitationList", userId);
+      await setDoc(inviterRef, { inviter }, { merge: true }); // Use setDoc with merge option
+    } catch (error) {
+      console.error('Error saving inviter:', error);
+    }
+  };
   
 
   const onShare = async () => {

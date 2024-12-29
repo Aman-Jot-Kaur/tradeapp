@@ -46,6 +46,7 @@ const[email,setEmail]=useState(null)
           const walletDoc = await getDoc(walletRef); // Fetch wallet data
   
           if (walletDoc.exists()) {
+            console.log(walletDoc.data().balances);
             setBalances(walletDoc.data().balances); // Set existing balances
           } else {
             await setDoc(walletRef, {
@@ -137,7 +138,7 @@ const[email,setEmail]=useState(null)
         const withdrawRef = collection(db, 'WithdrawRequest');
         await addDoc(withdrawRef, {
           userId,
-          requestedAmount: depositAmount,
+          amount: depositAmount,
           totalAmount: availableBalance,
           timestamp: serverTimestamp(),
           status:"pending",

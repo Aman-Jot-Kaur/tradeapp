@@ -3,31 +3,41 @@ import { View, Text, StyleSheet, ActivityIndicator, Linking } from 'react-native
 import { db } from '../firebaseCon'; // Import your Firebase config
 import { collection, getDocs } from 'firebase/firestore';
 import Icon from 'react-native-vector-icons/Ionicons'; // Importing Ionicons
+import { useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 
 const ContactUs = () => {
   const [contactInfo, setContactInfo] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchContactInfo = async () => {
-      try {
-        const contactCollectionRef = collection(db, 'Contact');
-        const contactDocs = await getDocs(contactCollectionRef);
-        const contactData = contactDocs.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  useFocusEffect(
+    useCallback(() => {
+      const fetchContactInfo = async () => {
+        try {
+          const contactCollectionRef = collection(db, 'Contact');
+          const contactDocs = await getDocs(contactCollectionRef);
+          const contactData = contactDocs.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
-        // Assuming there's only one document with contact info
-        if (contactData.length > 0) {
-          setContactInfo(contactData[0]); // Set the first document as contact info
+          // Assuming there's only one document with contact info
+          if (contactData.length > 0) {
+            setContactInfo(contactData[0]); // Set the first document as contact info
+          }
+        } catch (error) {
+          console.error('Error fetching contact info:', error);
+        } finally {
+          setLoading(false);
         }
-      } catch (error) {
-        console.error('Error fetching contact info:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      };
 
-    fetchContactInfo();
-  }, []);
+      fetchContactInfo();
+
+      // Optionally, cleanup if needed when the screen loses focus
+      return () => {
+        setContactInfo(null); // Reset contact info if desired
+        setLoading(true);
+      };
+    }, []) // Empty dependency array ensures this runs only when the screen gains focus
+  );
 
   if (loading) {
     return (

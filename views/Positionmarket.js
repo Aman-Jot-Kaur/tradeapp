@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   },
   webview: {
     flex: 1,
-    height: 3000, // Adjust to allow for proper spacing between widgets
+    height: 9000, // Adjust to allow for proper spacing between widgets
   },
 });
 

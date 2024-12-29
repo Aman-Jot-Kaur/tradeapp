@@ -29,6 +29,7 @@ import CustomHeader from "./views/TopBar";
 import ContactScreen from "./views/ContactScreen";
 import Toast from "react-native-toast-message"; // Import Toast
 import Helpchatscreen from "./views/Helpchatscreen";
+import PrivacyScreen from "./views/PrivacyScreen";
 import { useState } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore"; // Correct Firestore imports
 // import Toast from 'react-native-toast-message';
@@ -60,7 +61,7 @@ export default function App() {
       try {
         const storedUserId = await AsyncStorage.getItem("userIdSA");
         if (!storedUserId) {
-          Toast.show({ type: "error", text1: "User ID not found" });
+          // Toast.show({ type: "error", text1: "User ID not found" });
           // setLoading(false);
           return;
         }
@@ -304,6 +305,21 @@ export default function App() {
             ),
           }}
         />
+        <Drawer.Screen
+  name="Privacy"
+  component={PrivacyScreen} // Replace with your actual component
+  options={{
+    drawerIcon: ({ focused, size }) => (
+      <MaterialIcons
+        name="shield"
+        size={size}
+        style={{ marginRight: -30 }}
+        color={focused ? "#1E90FF" : "#808080"}
+      />
+    ),
+  }}
+/>
+
 
         <Drawer.Screen
           name="Logout"
@@ -381,7 +397,7 @@ export default function App() {
       </Drawer.Navigator>
 
       {/* Global Toast Configuration */}
-      <Toast ref={(ref) => Toast.setRef(ref)} />
+      <Toast />
     </NavigationContainer>
   );
 }

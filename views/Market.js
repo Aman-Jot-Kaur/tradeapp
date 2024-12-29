@@ -207,7 +207,7 @@ console.log(fetchedTrades,"ffrreesfsdfdsgvdghfc htgrhjtfbjhtrbhntfbhtfyh")
 
       <ScrollView contentContainerStyle={styles.content}>
       <FlatList
-        data={["Wishlist", "Positions", "Orders", "Price Alerts", "History"]}
+        data={["Wishlist", "Positions", "Orders", "Price Alerts"]}
         horizontal
         showsHorizontalScrollIndicator={false}
         keyExtractor={(item) => item}

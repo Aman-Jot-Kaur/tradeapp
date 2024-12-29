@@ -88,7 +88,7 @@ const LoginScreen = () => {
       const userData = userDoc.data();
       const status = userData.status; // Retrieve current email
       // Navigate to Graph screen
-      if(status === 'active')
+      if(status == 'active')
       navigation.navigate("Graph"); 
     else
       navigation.navigate("Pending");
